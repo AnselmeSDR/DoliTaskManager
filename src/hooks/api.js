@@ -12,8 +12,8 @@ export const useAPIData = (endpoint, token) => {
         });
     };
 
-    const getPinnedTasks = async () => {
-        const url = `${endpoint}/custom/vold/ticket_api.php?action=get_pinned_tasks`;
+    const getPinnedTasks = async (params) => {
+        const url = `${endpoint}/custom/vold/ticket_api.php?action=get_pinned_tasks&${new URLSearchParams(params).toString()}`;
 
         return apiFetch(url, {
             method: 'GET',
@@ -36,8 +36,8 @@ export const useAPIData = (endpoint, token) => {
         });
     };
 
-    const updateTaskTime = async (ref, data) => {
-        const url = `${endpoint}/custom/vold/ticket_api.php?action=update_task_time&ref=` + ref;
+    const updateTaskTime = async (params, data) => {
+        const url = `${endpoint}/custom/vold/ticket_api.php?action=update_task_time&${new URLSearchParams(params).toString()}`;
 
         return apiFetch(url, {
             method: 'PUT',

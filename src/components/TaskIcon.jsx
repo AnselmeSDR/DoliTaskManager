@@ -20,9 +20,21 @@ const IconStyles = {
     'FEATURE': 'text-green-500',
 }
 
-const TaskIcon = ({type, className}) => {
+const EmojiIcons = {
+    'DEFAULT': 'ℹ️',
+    'SUPPORT_N1': '📞',
+    'BUG': '🐞',
+    'SUPPORT_N2': '👨🏻‍💻',
+    'FEATURE': '🚀',
+}
+
+const TaskIcon = ({type, className, useEmojiIcons}) => {
     if (!type || !Icons[type]) {
         type = 'DEFAULT'
+    }
+
+    if (useEmojiIcons) {
+        return <span className={className}>{EmojiIcons[type]}</span>
     }
 
     const Icon = Icons[type];
