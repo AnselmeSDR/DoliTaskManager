@@ -15,6 +15,7 @@ const Home = ({
                   pinnedTaskRefs,
                   savePinnedTaskRef,
                   useEmojiIcons,
+                  initialLimitTasks,
                   limitTasks,
               }) => {
     const {searchTasks, getTask} = useAPIData(apiUrl, apiKey);
@@ -34,6 +35,7 @@ const Home = ({
 
     const [searchBarHeight, setSearchBarHeight] = useState(0);
     const [pinnedHeaderHeight, setPinnedHeaderHeight] = useState(0);
+    const didInitialFetch = useRef(false); // Limit initial fetch to initialFetchTaskLimit tasks and load pinned tasks once on mount
 
     // Measure sticky blocks heights on mount and window resize
     useEffect(() => {
@@ -59,99 +61,145 @@ const Home = ({
     useEffect(() => {
         if (!apiKey || !apiUrl) return;
 
-        const fetchTasks = async () => {
-            setIsLoading(true);
+        fetchPinnedTasks();
+        fetchTasks();
+    }, [apiUrl, apiKey, searchTerm, showOnlyMyTasks, showClosedTasks, pinnedTaskRefs, limitTasks]);
 
-            let currentSearchTerm = searchTerm;
+    const fetchTasks = async () => {
+        const isInitial = !didInitialFetch.current;
 
-            if (searchTerm === '') {
-                currentSearchTerm = await findTaskRef();
-                if (currentSearchTerm && lastRefFounded !== currentSearchTerm) {
-                    setInputValue(currentSearchTerm); // ← met aussi à jour le champ input
-                    setLastRefFounded(currentSearchTerm);
-                } else {
-                    currentSearchTerm = '';
-                }
-            }
+        setIsLoading(true);
 
-            const params = {
-                search_term: currentSearchTerm,
-                limit_tasks: limitTasks,
-            };
-            if (showOnlyMyTasks === false) {
-                params.view_all_tasks = true;
-            }
-            if (showClosedTasks === true) {
-                params.closed_only = true;
-            }
+        let currentSearchTerm = searchTerm;
 
-            try {
-                const items = await searchTasks(params) || [];
-                const itemsWithPinned = items.map(item => ({
-                    ...item,
-                    is_pinned: pinnedTaskRefs?.includes(item.ref) || false
-                }));
-                setTasks(itemsWithPinned);
-            } catch (error) {
-                console.error("Erreur lors de la récupération des tâches:", error);
-            } finally {
-                setIsLoading(false);
+        if (searchTerm === '') {
+            currentSearchTerm = await findTaskRef();
+            if (currentSearchTerm && lastRefFounded !== currentSearchTerm) {
+                setInputValue(currentSearchTerm);
+                setLastRefFounded(currentSearchTerm);
+            } else {
+                currentSearchTerm = '';
             }
+        }
+
+        const params = {
+            search_term: currentSearchTerm,
+            limit_tasks: isInitial ? initialLimitTasks : limitTasks,
         };
+        if (showOnlyMyTasks === false) {
+            params.view_all_tasks = true;
+        }
+        if (showClosedTasks === true) {
+            params.closed_only = true;
+        }
 
-        fetchTasks()
-    }, [searchTerm, apiUrl, apiKey, showOnlyMyTasks, showClosedTasks, pinnedTaskRefs, limitTasks]);
+        try {
+            const items = await searchTasks(params) || [];
+            const itemsWithPinned = items.map(item => ({
+                ...item,
+                is_pinned: pinnedTaskRefs?.includes(item.ref) || false
+            }));
+            setTasks(itemsWithPinned);
+        } catch (error) {
+            console.error("Erreur lors de la récupération des tâches:", error);
+        } finally {
+            setIsLoading(false);
+            if (isInitial) {
+                didInitialFetch.current = true; // ensure we don't treat future calls as initial
+            }
+        }
+    };
 
-    useEffect(() => {
-        if (!apiKey || !apiUrl) return;
+    const fetchPinnedTasks = async () => {
+        if (didInitialFetch.current) return; // Only on initial mount
 
-        const fetchPinnedTasks = async () => {
-            setIsLoadingPinned(true);
-
-            let pinnedTasks = [];
-            pinnedTaskRefs.forEach(ref => {
-                getTask({ref}).then(task => {
-                    if (task) {
-                        task.is_pinned = true;
-                        pinnedTasks.push(task);
-                    }
-                }).catch(error => console.error("Erreur lors de la récupération de la tâche épinglée:", error));
-            });
-
-            setPinnedTasks(pinnedTasks);
+        setIsLoadingPinned(true);
+        try {
+            const refs = Array.isArray(pinnedTaskRefs) ? pinnedTaskRefs : [];
+            const results = await Promise.all(
+                refs.map(ref =>
+                    getTask({ref})
+                        .then(task => (task ? {...task, is_pinned: true} : null))
+                        .catch(err => {
+                            console.error("Erreur lors de la récupération de la tâche épinglée:", err);
+                            return null;
+                        })
+                )
+            );
+            setPinnedTasks(results.filter(Boolean));
+        } finally {
             setIsLoadingPinned(false);
-        };
-
-        fetchPinnedTasks()
-    }, [pinnedTaskRefs, apiUrl, apiKey]);
+        }
+    };
 
     const findTaskRef = async () => {
-        return new Promise((resolve) => {
-            chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
-                const tab = tabs[0];
-                if (!tab?.url) {
+        try {
+            return await new Promise((resolve) => {
+                if (typeof chrome === 'undefined' || !chrome?.tabs?.query) {
                     return resolve('');
                 }
 
-                const url = new URL(tab.url);
-                const hostname = url.hostname;
-                const pathname = url.pathname;
-
-                if (hostname === config.ATLASSIAN_HOSTNAME) {
-                    // Priorité à selectedIssue
-                    if (url.searchParams.has("selectedIssue")) {
-                        return resolve(url.searchParams.get("selectedIssue"));
+                chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+                    const tab = tabs && tabs[0];
+                    if (!tab?.url) {
+                        return resolve('');
                     }
 
-                    const matches = pathname.match(/([A-Z]+-\d+)/g);
-                    if (matches && matches.length) {
-                        return resolve(matches[0]);
-                    }
-                }
+                    let keyFromUrl = '';
+                    const url = new URL(tab.url);
+                    const hostname = url.hostname || '';
+                    const pathname = url.pathname || '';
 
-                return resolve('');
+                    // Only accept the configured Atlassian hostname
+                    const isAtlassian = hostname === config.ATLASSIAN_HOSTNAME;
+
+                    if (isAtlassian) {
+                        const qp = url.searchParams;
+                        // 1) Priority to explicit query params
+                        if (qp.has("selectedIssue")) {
+                            keyFromUrl = qp.get("selectedIssue");
+                        } else if (qp.has("issueKey")) {
+                            keyFromUrl = qp.get("issueKey");
+                        }
+
+                        // 2) Paths like /browse/ABC-123
+                        if (!keyFromUrl) {
+                            const browseMatches = pathname.match(/\/browse\/([A-Z0-9]+-\d+)/gi);
+                            if (browseMatches && browseMatches.length) {
+                                const last = browseMatches[browseMatches.length - 1];
+                                const lastKey = last.match(/([A-Z0-9]+-\d+)/i)?.[0];
+                                if (lastKey) keyFromUrl = lastKey;
+                            }
+                        }
+
+                        // 3) Fallback: scan entire pathname, take last match
+                        if (!keyFromUrl) {
+                            const allKeys = pathname.match(/([A-Z0-9]+-\d+)/gi);
+                            if (allKeys && allKeys.length) {
+                                keyFromUrl = allKeys[allKeys.length - 1];
+                            }
+                        }
+
+                        // 4) Hash fragment fallback (e.g., #...&selectedIssue=ABC-321)
+                        if (!keyFromUrl && url.hash) {
+                            const hashKeys = url.hash.match(/([A-Z0-9]+-\d+)/gi);
+                            if (hashKeys && hashKeys.length) {
+                                keyFromUrl = hashKeys[hashKeys.length - 1];
+                            }
+                        }
+                    }
+
+                    if (keyFromUrl && /[A-Z0-9]+-\d+/i.test(keyFromUrl)) {
+                        return resolve(keyFromUrl.toUpperCase());
+                    }
+
+                    return resolve('');
+                });
             });
-        });
+        } catch (e) {
+            console.error('findTaskRef error:', e);
+            return '';
+        }
     };
 
     function selectTask(currentTask) {
@@ -233,9 +281,7 @@ const Home = ({
                 {/* Liste des tasks */}
                 <div className="flex flex-col gap-2 w-full pb-2 px-2">
                     {isLoading && <Loader className="mx-auto text-center" />}
-                    {!isLoading && tasks.length === 0 &&
-                        <p className="text-gray-400 text-sm">Aucun résultat :(</p>
-                    }
+                    {!isLoading && tasks.length === 0 && <p className="text-gray-400 text-sm">Aucun résultat :(</p>}
                     {!isLoading && tasks.map((task) => (
                         <TaskItem key={task.ref}
                                   className="bg-white border border-gray-200 rounded-lg shadow px-3 py-2"

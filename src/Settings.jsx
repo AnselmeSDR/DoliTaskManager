@@ -16,6 +16,8 @@ const Settings = ({
                       setShowClosedTasks,
                       useEmojiIcons,
                       setUseEmojiIcons,
+                      initialLimitTasks,
+                      setInitialLimitTasks,
                       limitTasks,
                       setLimitTasks,
                       limitTimes,
@@ -64,12 +66,20 @@ const Settings = ({
                     label="Utiliser des emojis pour les icônes de tâches"
                 />
                 <Select
+                    label="Nombre maximum de tâches à charger à l'ouverture"
+                    name="initialLimitTasks"
+                    full={false}
+                    value={initialLimitTasks}
+                    onChange={(e) => setInitialLimitTasks(parseInt(e.target.value, 10))}
+                    options={[5, 10, 15, 20, 25, 50, 100, 200]}
+                />
+                <Select
                     label="Nombre maximum de tâches à charger"
                     name="limitTasks"
                     full={false}
                     value={limitTasks}
                     onChange={(e) => setLimitTasks(parseInt(e.target.value, 10))}
-                    options={[5, 10, 15, 20, 25]}
+                    options={[5, 10, 15, 20, 25, 50, 100, 200]}
                 />
 
                 <h2 className="text-lg font-semibold w-full mt-4">Tâche</h2>
@@ -88,13 +98,13 @@ const Settings = ({
                     label="Afficher l'historique des temps passés"
                 />
                 <Select
-                  label="Nombre maximum de time spend à afficher"
-                  name="limitTimes"
-                  full={false}
-                  value={limitTimes}
-                  onChange={(e) => setLimitTimes(parseInt(e.target.value, 10))}
-                  options={[1, 5, 10]}
-                  disabled={!showTimes}
+                    label="Nombre maximum d'historiques de temps à charger"
+                    name="limitTimes"
+                    full={false}
+                    value={limitTimes}
+                    onChange={(e) => setLimitTimes(parseInt(e.target.value, 10))}
+                    options={[1, 5, 10]}
+                    disabled={!showTimes}
                 />
 
             </div>
