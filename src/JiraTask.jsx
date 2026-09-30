@@ -22,7 +22,7 @@ const Field = ({ label, children }) => (
 );
 
 // Task detail + time logging, styled as a native Jira issue view group
-const JiraTask = ({ apiUrl, apiKey, taskRef, defaultDuration, useEmojiIcons, limitTimes, showTimes }) => {
+const JiraTask = ({ apiUrl, apiKey, taskRef, defaultDuration, useEmojiIcons, limitTimes, showTimes, onLoadError }) => {
     const { getTask, updateTaskTime } = useAPIData(apiUrl, apiKey);
 
     const [task, setTask] = useState(null);
@@ -37,7 +37,8 @@ const JiraTask = ({ apiUrl, apiKey, taskRef, defaultDuration, useEmojiIcons, lim
     useEffect(() => {
         getTask(params)
             .then(setTask)
-            .catch((error) => setError(error.message));
+            // Parent may fall back to a search instead of showing the error
+            .catch((error) => (onLoadError ? onLoadError(error) : setError(error.message)));
     }, [taskRef]);
 
     function updateTime(sign) {
