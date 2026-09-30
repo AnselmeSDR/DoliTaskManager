@@ -6,6 +6,7 @@ import './index.css';
 import Header from "./components/Header.jsx";
 import Settings from "./Settings.jsx";
 import Task from "./Task.jsx";
+import Embed from "./Embed.jsx";
 
 const App = () => {
     const [view, setView] = useState('home');
@@ -27,6 +28,11 @@ const App = () => {
     const [showTimes, setShowTimes] = useState(true);
     const [limitTimes, setLimitTimes] = useState(1);
 
+    // Jira settings
+    const [jiraPanel, setJiraPanel] = useState(true);
+    const [jiraDates, setJiraDates] = useState(true);
+    const [wideIssueModalWidth, setWideIssueModalWidth] = useState(0); // 0 = Jira default width
+
     // Settings loaded in a single read: Home must not fetch with default values (limitTasks…)
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
@@ -35,6 +41,7 @@ const App = () => {
             'pinnedTaskRefs', 'apiKey', 'apiUrl',
             'showOnlyMyTasks', 'showClosedTasks', 'useEmojiIcons', 'limitTasks',
             'defaultDuration', 'showTimes', 'limitTimes',
+            'jiraPanel', 'jiraDates', 'wideIssueModalWidth',
         ];
 
         chrome.storage.sync.get(keys, (val) => {
@@ -54,6 +61,11 @@ const App = () => {
             if (val.defaultDuration !== undefined) setDefaultDuration(val.defaultDuration);
             if (val.showTimes !== undefined) setShowTimes(val.showTimes);
             if (val.limitTimes !== undefined) setLimitTimes(val.limitTimes);
+
+            // Jira settings
+            if (val.jiraPanel !== undefined) setJiraPanel(val.jiraPanel);
+            if (val.jiraDates !== undefined) setJiraDates(val.jiraDates);
+            if (val.wideIssueModalWidth !== undefined) setWideIssueModalWidth(val.wideIssueModalWidth);
 
             setIsSettingsLoaded(true);
         })
@@ -116,6 +128,20 @@ const App = () => {
     };
 
 
+    // Jira settings
+    const saveJiraPanel = (val) => {
+        chrome.storage.sync.set({jiraPanel: val}, () => setJiraPanel(val));
+    };
+
+    const saveJiraDates = (val) => {
+        chrome.storage.sync.set({jiraDates: val}, () => setJiraDates(val));
+    };
+
+    const saveWideIssueModalWidth = (val) => {
+        chrome.storage.sync.set({wideIssueModalWidth: val}, () => setWideIssueModalWidth(val));
+    };
+
+
     return (
         <>
             <Header view={view} setView={setView} setSelectedTask={setSelectedTask} />
@@ -143,7 +169,10 @@ const App = () => {
                                 useEmojiIcons={useEmojiIcons} setUseEmojiIcons={saveUseEmojiIcons}
                                 limitTasks={limitTasks} setLimitTasks={saveLimitTasks}
                                 limitTimes={limitTimes} setLimitTimes={saveLimitTimes}
-                                showTimes={showTimes} setShowTimes={saveShowTimes} />
+                                showTimes={showTimes} setShowTimes={saveShowTimes}
+                                jiraPanel={jiraPanel} setJiraPanel={saveJiraPanel}
+                                jiraDates={jiraDates} setJiraDates={saveJiraDates}
+                                wideIssueModalWidth={wideIssueModalWidth} setWideIssueModalWidth={saveWideIssueModalWidth} />
                     : null
                 }
 
@@ -162,4 +191,12 @@ const App = () => {
     )
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+const urlParams = new URLSearchParams(window.location.search);
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+if (urlParams.get('embed') === 'task' && urlParams.get('ref')) {
+    document.documentElement.classList.add('embed');
+    root.render(<Embed taskRef={urlParams.get('ref')} />);
+} else {
+    root.render(<App />);
+}

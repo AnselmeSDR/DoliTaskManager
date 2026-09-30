@@ -1,0 +1,93 @@
+/* DoliTaskManager panel injected in the Jira issue right column */
+#dtm-panel {
+    display: block;
+    width: 100%;
+    height: 120px;
+    margin-bottom: 8px;
+    border: 0;
+    /* Must match the iframe document scheme, otherwise Chrome paints an opaque white background */
+    color-scheme: light;
+}
+
+/* Wider issue modal (?selectedIssue=KEY), Atlaskit sets the width on the dialog positioner */
+.dtm-wide-issue-modal div:has(> section[role="dialog"][data-testid*="issue-modal"]) {
+    /* Set from settings by content.js */
+    width: var(--dtm-issue-modal-width, 80vw) !important;
+    max-width: none !important;
+    inset-inline: 0 !important;
+    margin-inline: auto !important;
+}
+
+.dtm-wide-issue-modal section[role="dialog"][data-testid*="issue-modal"] {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Issue created/updated dates, moved under the status row (Jira design tokens) */
+#dtm-dates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 0 6px;
+}
+
+.dtm-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--ds-text-subtle, #505258);
+    background: var(--ds-background-neutral, #0515240f);
+    border-radius: 12px;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.dtm-date strong {
+    font-weight: 600;
+    color: var(--ds-text, #292a2e);
+}
+
+.dtm-date svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+.dtm-hidden {
+    display: none !important;
+}
+
+/*
+ * Right column order: status, DoliTaskManager, Details (+ "More fields"), then SLA, Client, Automation…
+ * Only the display order changes (CSS order), React-managed nodes are not moved.
+ * Active with the panel only (html.dtm-reorder).
+ */
+.dtm-reorder [data-testid="issue.views.issue-details.issue-layout.visibility-container"] {
+    display: flex;
+    flex-direction: column;
+}
+
+.dtm-reorder [data-testid="issue.views.issue-details.issue-layout.visibility-container"] > * {
+    order: 10;
+}
+
+.dtm-reorder
+    [data-testid="issue.views.issue-details.issue-layout.visibility-container"]
+    > [data-testid="ref-spotlight-target-status-and-approval-spotlight"] {
+    order: 0;
+}
+
+.dtm-reorder [data-testid="issue.views.issue-details.issue-layout.visibility-container"] > #dtm-panel {
+    order: 1;
+}
+
+.dtm-reorder
+    [data-testid="issue.views.issue-details.issue-layout.visibility-container"]
+    > [data-testid="issue-view-product-templates-views.ui.context.visible-hidden.ui.context-items"] {
+    order: 2;
+}
