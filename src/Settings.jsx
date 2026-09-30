@@ -22,6 +22,12 @@ const Settings = ({
                       setLimitTimes,
                       showTimes,
                       setShowTimes,
+                      jiraPanel,
+                      setJiraPanel,
+                      jiraDates,
+                      setJiraDates,
+                      wideIssueModalWidth,
+                      setWideIssueModalWidth,
                   }) => {
     return (
         <div className="h-[560px] overflow-hidden bg-blue-50 flex flex-col w-full">
@@ -95,6 +101,28 @@ const Settings = ({
                     onChange={(e) => setLimitTimes(parseInt(e.target.value, 10))}
                     options={[1, 5, 10]}
                     disabled={!showTimes}
+                />
+
+                <h2 className="text-lg font-semibold w-full mt-4">Jira</h2>
+                <Switch
+                    id="jiraPanel"
+                    checked={jiraPanel}
+                    onChange={(val) => setJiraPanel(val)}
+                    label="Afficher la tâche dans le panneau de droite des tickets"
+                />
+                <Switch
+                    id="jiraDates"
+                    checked={jiraDates}
+                    onChange={(val) => setJiraDates(val)}
+                    label="Afficher les dates de création / mise à jour à côté du statut"
+                />
+                <Select
+                    label="Largeur de la popup des tickets (%)"
+                    name="wideIssueModalWidth"
+                    full={false}
+                    value={wideIssueModalWidth || 'Défaut'}
+                    onChange={(e) => setWideIssueModalWidth(parseInt(e.target.value, 10) || 0)}
+                    options={['Défaut', 60, 70, 80, 90, 95]}
                 />
 
             </div>

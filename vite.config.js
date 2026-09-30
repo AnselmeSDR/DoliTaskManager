@@ -12,7 +12,8 @@ export default defineConfig({
                 {
                     src: 'src/content.js',
                     dest: ''
-                }
+                },
+                {src: 'src/content.css', dest: ''}
             ]
         })
     ],
