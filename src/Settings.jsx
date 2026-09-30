@@ -16,8 +16,6 @@ const Settings = ({
                       setShowClosedTasks,
                       useEmojiIcons,
                       setUseEmojiIcons,
-                      initialLimitTasks,
-                      setInitialLimitTasks,
                       limitTasks,
                       setLimitTasks,
                       limitTimes,
@@ -64,14 +62,6 @@ const Settings = ({
                     checked={useEmojiIcons}
                     onChange={(val) => setUseEmojiIcons(val)}
                     label="Utiliser des emojis pour les icônes de tâches"
-                />
-                <Select
-                    label="Nombre maximum de tâches à charger à l'ouverture"
-                    name="initialLimitTasks"
-                    full={false}
-                    value={initialLimitTasks}
-                    onChange={(e) => setInitialLimitTasks(parseInt(e.target.value, 10))}
-                    options={[5, 10, 15, 20, 25, 50, 100, 200]}
                 />
                 <Select
                     label="Nombre maximum de tâches à charger"
