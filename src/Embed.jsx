@@ -54,6 +54,8 @@ const Embed = ({ taskRef }) => {
     const [tasks, setTasks] = useState(null);
     const [selectedRef, setSelectedRef] = useState(null);
     const [error, setError] = useState(null);
+    // Exact ref lookup first (get_task has no status/project filter), search only as fallback
+    const [isDirectLookupFailed, setIsDirectLookupFailed] = useState(false);
     const [isOpen, setIsOpen] = useState(true);
 
     const { searchTasks } = useAPIData(settings?.apiUrl, settings?.apiKey);
@@ -69,43 +71,53 @@ const Embed = ({ taskRef }) => {
     }, []);
 
     useEffect(() => {
-        if (!settings?.apiUrl || !settings?.apiKey) return;
+        if (!isDirectLookupFailed || !settings?.apiUrl || !settings?.apiKey) return;
 
-        const params = { search_term: taskRef, limit_tasks: 10, view_all_tasks: true };
-        const cacheKey = `embedSearch:${taskRef}`;
-
-        const showTasks = (list) => {
-            const exactMatch = list.find((item) => item.ref?.toUpperCase() === taskRef.toUpperCase());
-
-            setTasks(list);
-            // Keep the current selection: a change would make JiraTask fetch again
-            if (exactMatch || list.length === 1) setSelectedRef((current) => current ?? (exactMatch ?? list[0]).ref);
-        };
-
-        // Show the last search result instantly, then refresh it in the background
-        chrome.storage.session.get(cacheKey, (val) => {
-            if (val[cacheKey]) showTasks(val[cacheKey]);
-        });
+        // closed_only=true actually includes closed tickets in the API
+        const params = { search_term: taskRef, limit_tasks: 10, view_all_tasks: true, closed_only: true };
 
         searchTasks(params)
             .then((items) => {
-                chrome.storage.session.set({ [cacheKey]: items || [] });
-                showTasks(items || []);
+                const list = items || [];
+                setTasks(list);
+                if (list.length === 1) setSelectedRef(list[0].ref);
             })
             .catch((error) => {
                 console.error("Erreur lors de la recherche de la tâche:", error);
                 setError(error.message);
-                setTasks((current) => current ?? []);
+                setTasks([]);
             });
-    }, [settings?.apiUrl, settings?.apiKey, taskRef]);
+    }, [isDirectLookupFailed, settings?.apiUrl, settings?.apiKey, taskRef]);
 
     function toggle() {
         chrome.storage.local.set({ jiraPanelOpen: !isOpen });
         setIsOpen(!isOpen);
     }
 
+    const renderTask = (ref, onLoadError) => (
+        <JiraTask
+            key={ref}
+            apiUrl={settings.apiUrl}
+            apiKey={settings.apiKey}
+            taskRef={ref}
+            defaultDuration={settings.defaultDuration ?? 30}
+            useEmojiIcons={settings.useEmojiIcons ?? false}
+            limitTimes={settings.limitTimes ?? 1}
+            showTimes={settings.showTimes ?? true}
+            onLoadError={onLoadError}
+        />
+    );
+
     function renderBody() {
-        if (!settings || !tasks) {
+        if (!settings) {
+            return <Spinner />;
+        }
+
+        if (!isDirectLookupFailed) {
+            return renderTask(taskRef, () => setIsDirectLookupFailed(true));
+        }
+
+        if (!tasks) {
             return <Spinner />;
         }
 
@@ -117,16 +129,7 @@ const Embed = ({ taskRef }) => {
                             ← Autres tâches ({tasks.length})
                         </button>
                     )}
-                    <JiraTask
-                        key={selectedRef}
-                        apiUrl={settings.apiUrl}
-                        apiKey={settings.apiKey}
-                        taskRef={selectedRef}
-                        defaultDuration={settings.defaultDuration ?? 30}
-                        useEmojiIcons={settings.useEmojiIcons ?? false}
-                        limitTimes={settings.limitTimes ?? 1}
-                        showTimes={settings.showTimes ?? true}
-                    />
+                    {renderTask(selectedRef)}
                 </>
             );
         }
