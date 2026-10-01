@@ -310,3 +310,21 @@
         transform: rotate(360deg);
     }
 }
+
+/* GitLab sidebar (host=gitlab): flat block like the other sidebar sections, no card */
+.dtm-host-gitlab .dtm-panel {
+    border: 0;
+    border-radius: 0;
+}
+
+.dtm-host-gitlab .dtm-header {
+    padding: 4px 0 8px;
+}
+
+.dtm-host-gitlab .dtm-header:hover {
+    background: transparent;
+}
+
+.dtm-host-gitlab .dtm-body {
+    padding: 0 0 8px;
+}

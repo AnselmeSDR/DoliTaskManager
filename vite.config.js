@@ -26,11 +26,11 @@ export default defineConfig({
         viteStaticCopy({
             targets: [
                 {src: 'src/background.js', dest: ''},
-                {
-                    src: 'src/content.js',
-                    dest: ''
-                },
-                {src: 'src/content.css', dest: ''}
+                {src: 'src/content-common.js', dest: ''},
+                {src: 'src/content-jira.js', dest: ''},
+                {src: 'src/content-jira.css', dest: ''},
+                {src: 'src/content-gitlab.js', dest: ''},
+                {src: 'src/content-gitlab.css', dest: ''}
             ]
         })
     ],

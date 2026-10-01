@@ -49,7 +49,7 @@ const Chevron = ({ isOpen }) => (
 );
 
 // Dolibarr task group embedded in the Jira issue right column (index.html?embed=task&ref=KEY)
-const Embed = ({ taskRef }) => {
+const Embed = ({ taskRef, host }) => {
     const [settings, setSettings] = useState(null);
     const [tasks, setTasks] = useState(null);
     const [selectedRef, setSelectedRef] = useState(null);
@@ -97,6 +97,7 @@ const Embed = ({ taskRef }) => {
     const renderTask = (ref, onLoadError) => (
         <JiraTask
             key={ref}
+            host={host}
             apiUrl={settings.apiUrl}
             apiKey={settings.apiKey}
             taskRef={ref}

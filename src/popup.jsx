@@ -33,6 +33,9 @@ const App = () => {
     const [jiraDates, setJiraDates] = useState(true);
     const [wideIssueModalWidth, setWideIssueModalWidth] = useState(0); // 0 = Jira default width
 
+    // GitLab settings
+    const [gitlabPanel, setGitlabPanel] = useState(true);
+
     // Settings loaded in a single read: Home must not fetch with default values (limitTasks…)
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
@@ -42,6 +45,7 @@ const App = () => {
             'showOnlyMyTasks', 'showClosedTasks', 'useEmojiIcons', 'limitTasks',
             'defaultDuration', 'showTimes', 'limitTimes',
             'jiraPanel', 'jiraDates', 'wideIssueModalWidth',
+            'gitlabPanel',
         ];
 
         chrome.storage.sync.get(keys, (val) => {
@@ -66,6 +70,9 @@ const App = () => {
             if (val.jiraPanel !== undefined) setJiraPanel(val.jiraPanel);
             if (val.jiraDates !== undefined) setJiraDates(val.jiraDates);
             if (val.wideIssueModalWidth !== undefined) setWideIssueModalWidth(val.wideIssueModalWidth);
+
+            // GitLab settings
+            if (val.gitlabPanel !== undefined) setGitlabPanel(val.gitlabPanel);
 
             setIsSettingsLoaded(true);
         })
@@ -142,6 +149,12 @@ const App = () => {
     };
 
 
+    // GitLab settings
+    const saveGitlabPanel = (val) => {
+        chrome.storage.sync.set({gitlabPanel: val}, () => setGitlabPanel(val));
+    };
+
+
     return (
         <>
             <Header view={view} setView={setView} setSelectedTask={setSelectedTask} />
@@ -172,7 +185,8 @@ const App = () => {
                                 showTimes={showTimes} setShowTimes={saveShowTimes}
                                 jiraPanel={jiraPanel} setJiraPanel={saveJiraPanel}
                                 jiraDates={jiraDates} setJiraDates={saveJiraDates}
-                                wideIssueModalWidth={wideIssueModalWidth} setWideIssueModalWidth={saveWideIssueModalWidth} />
+                                wideIssueModalWidth={wideIssueModalWidth} setWideIssueModalWidth={saveWideIssueModalWidth}
+                                gitlabPanel={gitlabPanel} setGitlabPanel={saveGitlabPanel} />
                     : null
                 }
 
@@ -196,7 +210,10 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 
 if (urlParams.get('embed') === 'task' && urlParams.get('ref')) {
     document.documentElement.classList.add('embed');
-    root.render(<Embed taskRef={urlParams.get('ref')} />);
+    // Host page: look (see src/embed.css) and task link target
+    const host = ['jira', 'gitlab'].includes(urlParams.get('host')) ? urlParams.get('host') : 'jira';
+    document.documentElement.classList.add(`dtm-host-${host}`);
+    root.render(<Embed taskRef={urlParams.get('ref')} host={host} />);
 } else {
     root.render(<App />);
 }

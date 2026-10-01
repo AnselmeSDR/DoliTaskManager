@@ -1,10 +1,8 @@
-/* global chrome */
-// Jira integration: DoliTaskManager panel in the issue right column + wider issue modal
+/* global dtm */
+// Jira integration: DoliTaskManager panel in the issue right column, dates badges, wider issue modal
 (() => {
-    const panelId = "dtm-panel";
-    const pollDelayMs = 500;
+    const { panelId } = dtm;
     const issueKeyPattern = /^[A-Z][A-Z0-9_]+-\d+$/i;
-    const extensionOrigin = new URL(chrome.runtime.getURL("")).origin;
     // Atlassian design tokens forwarded to the embedded view (see src/embed.css)
     const themeTokens = [
         "--ds-surface",
@@ -99,7 +97,7 @@
         return next;
     };
 
-    // Right after the status block (display order is then fixed in CSS, see content.css)
+    // Right after the status block (display order is then fixed in CSS, see content-jira.css)
     function findInsertionPoint(column) {
         const statusBlock = byTestId(column, testIds.statusBlock);
         if (statusBlock) return { parent: statusBlock.parentElement, before: nextSibling(statusBlock) };
@@ -108,32 +106,13 @@
         return { parent: content, before: [...content.children].find((child) => child.id !== panelId) ?? null };
     }
 
-    function createPanel(key) {
-        const iframe = document.createElement("iframe");
-        iframe.id = panelId;
-        iframe.title = "DoliTaskManager";
-        iframe.dataset.ref = key;
-        iframe.src = chrome.runtime.getURL(`index.html?embed=task&ref=${encodeURIComponent(key)}`);
-        return iframe;
-    }
-
     function syncPanel() {
         const isEnabled = settings.jiraPanel && settings.apiKey && settings.apiUrl;
-        const key = isEnabled ? getIssueKey() : null;
-        const rightColumn = key ? findRightColumn() : null;
-        const panel = document.getElementById(panelId);
 
-        if (!rightColumn) {
-            panel?.remove();
-            return;
-        }
-
-        const { parent, before } = findInsertionPoint(rightColumn);
-        const isInPlace = panel?.parentElement === parent && panel.nextElementSibling === before;
-        if (isInPlace && panel.dataset.ref === key) return;
-
-        panel?.remove();
-        parent.insertBefore(createPanel(key), before);
+        dtm.syncPanel(isEnabled ? getIssueKey() : null, "jira", () => {
+            const rightColumn = findRightColumn();
+            return rightColumn ? findInsertionPoint(rightColumn) : null;
+        });
     }
 
     function createDateBadge(icon, label, value, title) {
@@ -210,10 +189,8 @@
         syncDates();
     }
 
-    function sendTheme() {
-        const panel = document.getElementById(panelId);
-        if (!panel?.contentWindow) return;
-
+    // Atlassian design tokens of the active theme
+    function getTheme() {
         const rootStyle = getComputedStyle(document.documentElement);
         const tokens = {};
         for (const name of themeTokens) {
@@ -221,46 +198,14 @@
             if (value) tokens[name] = value;
         }
 
-        const fontFamily = getComputedStyle(document.body).fontFamily;
-        panel.contentWindow.postMessage({ type: "dtm:theme", tokens, fontFamily }, extensionOrigin);
+        return { tokens, fontFamily: getComputedStyle(document.body).fontFamily };
     }
 
-    // Messages from the embedded view: ready (wants the theme) and height changes
-    window.addEventListener("message", (event) => {
-        const panel = document.getElementById(panelId);
-        if (!panel || event.source !== panel.contentWindow) return;
-
-        if (event.data?.type === "dtm:ready") sendTheme();
-        if (event.data?.type === "dtm:resize") panel.style.height = `${event.data.height}px`;
-    });
-
-    // Jira light/dark switch changes attributes on <html>
-    new MutationObserver(sendTheme).observe(document.documentElement, { attributes: true });
-
-    chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== "sync") return;
-
-        for (const [name, { newValue }] of Object.entries(changes)) {
-            if (name in settings) settings[name] = newValue;
-        }
-        applySettings();
-    });
-
-    chrome.storage.sync.get(Object.keys(settings), (values) => {
-        for (const [name, value] of Object.entries(values)) {
-            if (value !== undefined) settings[name] = value;
-        }
-        applySettings();
-    });
-
+    dtm.watchPanel(getTheme);
+    dtm.watchSettings(settings, applySettings);
     // Jira is a SPA: re-sync on navigation and when React re-renders the column
-    const interval = setInterval(() => {
-        // Extension reloaded: this script is orphaned
-        if (!chrome.runtime?.id) {
-            clearInterval(interval);
-            return;
-        }
+    dtm.poll(() => {
         syncPanel();
         syncDates();
-    }, pollDelayMs);
+    });
 })();

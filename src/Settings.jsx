@@ -28,6 +28,8 @@ const Settings = ({
                       setJiraDates,
                       wideIssueModalWidth,
                       setWideIssueModalWidth,
+                      gitlabPanel,
+                      setGitlabPanel,
                   }) => {
     return (
         <div className="h-[560px] overflow-hidden bg-blue-50 flex flex-col w-full">
@@ -123,6 +125,14 @@ const Settings = ({
                     value={wideIssueModalWidth || 'Défaut'}
                     onChange={(e) => setWideIssueModalWidth(parseInt(e.target.value, 10) || 0)}
                     options={['Défaut', 60, 70, 80, 90, 95]}
+                />
+
+                <h2 className="text-lg font-semibold w-full mt-4">GitLab</h2>
+                <Switch
+                    id="gitlabPanel"
+                    checked={gitlabPanel}
+                    onChange={(val) => setGitlabPanel(val)}
+                    label="Afficher la tâche dans le panneau de droite des merge requests"
                 />
 
             </div>

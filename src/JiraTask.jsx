@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAPIData } from "./hooks/api.js";
 import TaskIcon from "./components/TaskIcon.jsx";
+import config from "./config.js";
 import {
     formatBusinessDuration,
     formatDateTime,
@@ -22,7 +23,17 @@ const Field = ({ label, children }) => (
 );
 
 // Task detail + time logging, styled as a native Jira issue view group
-const JiraTask = ({ apiUrl, apiKey, taskRef, defaultDuration, useEmojiIcons, limitTimes, showTimes, onLoadError }) => {
+const JiraTask = ({
+    host,
+    apiUrl,
+    apiKey,
+    taskRef,
+    defaultDuration,
+    useEmojiIcons,
+    limitTimes,
+    showTimes,
+    onLoadError,
+}) => {
     const { getTask, updateTaskTime } = useAPIData(apiUrl, apiKey);
 
     const [task, setTask] = useState(null);
@@ -63,11 +74,14 @@ const JiraTask = ({ apiUrl, apiKey, taskRef, defaultDuration, useEmojiIcons, lim
         return <Spinner />;
     }
 
+    // One hop towards the source: GitLab links to the Jira issue, Jira links to the Dolibarr task
+    const taskLink = host === "gitlab" ? `https://${config.ATLASSIAN_HOSTNAME}/browse/${task.ref}` : task.link;
+
     return (
         <>
             {/* Subject and assignee mirror the Jira issue: one line is enough */}
             <div className="dtm-summary">
-                <a className="dtm-link" href={task.link} target="_blank" rel="noreferrer" title={task.subject}>
+                <a className="dtm-link" href={taskLink} target="_blank" rel="noreferrer" title={task.subject}>
                     <TaskIcon type={task.type_code} useEmojiIcons={useEmojiIcons} className="!size-4" />
                     {task.ref}
                 </a>

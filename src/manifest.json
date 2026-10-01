@@ -28,10 +28,23 @@
         "https://*.atlassian.net/*"
       ],
       "js": [
-        "content.js"
+        "content-common.js",
+        "content-jira.js"
       ],
       "css": [
-        "content.css"
+        "content-jira.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://__GITLAB_HOSTNAME__/*"
+      ],
+      "js": [
+        "content-common.js",
+        "content-gitlab.js"
+      ],
+      "css": [
+        "content-gitlab.css"
       ]
     }
   ],
@@ -43,7 +56,8 @@
         "assets/*"
       ],
       "matches": [
-        "https://*.atlassian.net/*"
+        "https://*.atlassian.net/*",
+        "https://__GITLAB_HOSTNAME__/*"
       ]
     }
   ]
