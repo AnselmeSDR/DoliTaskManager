@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {useAPIData} from "./hooks/api.js";
 import Loader from "./components/Loader.jsx";
 import TaskIcon from "./components/TaskIcon.jsx";
-import sha256 from 'crypto-js/sha256';
+import {formatBusinessDuration, formatDateTime, formatSecondsHuman, getGravatarUrl} from "./utils/format.js";
 import TaskTimeHistory from "./components/TaskTimeHistory.jsx";
 import Input from "./components/Input.jsx";
 import ExternalLink from "./components/ExternalLink.jsx";
@@ -47,37 +47,6 @@ const Task = ({apiUrl, apiKey, selectedTask, defaultDuration, useEmojiIcons, lim
                 {duration} min
             </div>
         )
-    }
-
-    function formatBusinessDuration(minutes) {
-        const minutesPerDay = 480; // 8 hours * 60 minutes
-        const days = Math.floor(minutes / minutesPerDay);
-        const remainingMinutes = minutes % minutesPerDay;
-        const hours = Math.floor(remainingMinutes / 60);
-        const mins = remainingMinutes % 60;
-
-        let result = '';
-
-        if (days > 0) {
-            result += `${days} day${days > 1 ? 's' : ''}`;
-        }
-
-        if (hours > 0) {
-            if (result) result += ' ';
-            result += `${hours}h`;
-        }
-
-        if (mins > 0) {
-            if (result) result += ' ';
-            result += `${mins}min`;
-        }
-
-        // Case: less than a day and no full hours (e.g., 30min)
-        if (!result) {
-            result = `${mins}min`;
-        }
-
-        return result;
     }
 
     function updateTime(type) {
@@ -210,29 +179,6 @@ const Task = ({apiUrl, apiKey, selectedTask, defaultDuration, useEmojiIcons, lim
 
     const getColor = (type_code) => {
         return getBgColor(type_code) + getTextColor(type_code) + getHoverBgColor(type_code) + getBorderColor(type_code) + getFocusRingColor(type_code);
-    }
-
-    // Format seconds to a human-friendly business duration using the existing formatter
-    function formatSecondsHuman(seconds) {
-        const mins = Math.round(parseInt(seconds || 0, 10) / 60);
-        return formatBusinessDuration(mins);
-    }
-
-    // Format a timestamp (YYYY-MM-DD HH:mm:ss) into a local readable string
-    function formatDateTime(ts) {
-        if (!ts) return '';
-        try {
-            const d = new Date(ts.replace(' ', 'T'));
-            return d.toLocaleString();
-        } catch {
-            return ts;
-        }
-    }
-
-    function getGravatarUrl(email, size = 32) {
-        const clean = (email || '').trim().toLowerCase();
-        const hash = sha256(clean).toString();
-        return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=identicon`;
     }
 
     return (

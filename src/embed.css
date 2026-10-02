@@ -1,0 +1,330 @@
+/*
+ * Jira issue view look for the embedded panel (Embed.jsx / JiraTask.jsx).
+ * Colors are Atlassian design tokens sent by the content script; fallbacks = Jira light theme.
+ */
+
+.dtm-panel {
+    font-family: var(--dtm-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--ds-text, #292a2e);
+    /* Transparent like Jira groups: shows the issue view background behind the iframe */
+    background: transparent;
+    border: 1px solid var(--ds-border, #0b120e24);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.dtm-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    font-weight: 600;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+}
+
+.dtm-header:hover {
+    background: var(--ds-background-neutral-subtle-hovered, #0515240f);
+}
+
+.dtm-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--ds-icon-subtle, #505258);
+    transition: transform 150ms ease;
+}
+
+.dtm-chevron-closed {
+    transform: rotate(-90deg);
+}
+
+.dtm-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 2px 12px 12px;
+}
+
+.dtm-field-label {
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: var(--ds-text-subtle, #505258);
+}
+
+.dtm-field-value {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.dtm-strong {
+    font-weight: 600;
+}
+
+.dtm-subtle {
+    color: var(--ds-text-subtle, #505258);
+}
+
+.dtm-subtlest {
+    font-size: 12px;
+    color: var(--ds-text-subtlest, #6b6e76);
+}
+
+.dtm-ellipsis {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.dtm-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    color: var(--ds-link, #1868db);
+}
+
+.dtm-link:hover {
+    text-decoration: underline;
+}
+
+.dtm-link-button {
+    align-self: flex-start;
+    font-size: 12px;
+    color: var(--ds-link, #1868db);
+    cursor: pointer;
+}
+
+.dtm-link-button:hover {
+    text-decoration: underline;
+}
+
+.dtm-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.dtm-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dtm-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.dtm-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.dtm-chip,
+.dtm-button {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ds-text, #292a2e);
+    background: var(--ds-background-neutral, #0515240f);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dtm-chip:hover,
+.dtm-button:hover {
+    background: var(--ds-background-neutral-hovered, #0b120e24);
+}
+
+.dtm-chip-selected,
+.dtm-chip-selected:hover {
+    color: var(--ds-text-selected, #1868db);
+    background: var(--ds-background-selected, #e9f2fe);
+    border-color: var(--ds-border-selected, #1868db);
+}
+
+.dtm-counter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.dtm-counter-value {
+    flex: 1;
+    text-align: center;
+}
+
+.dtm-button {
+    width: 32px;
+    height: 28px;
+    padding: 0;
+    font-size: 16px;
+}
+
+.dtm-button-primary {
+    color: var(--ds-text-inverse, #ffffff);
+    background: var(--ds-background-brand-bold, #1868db);
+}
+
+.dtm-button-primary:hover {
+    background: var(--ds-background-brand-bold-hovered, #1558bc);
+}
+
+.dtm-chip:disabled,
+.dtm-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dtm-input {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    font: inherit;
+    color: inherit;
+    background: var(--ds-background-input, #ffffff);
+    border: 1px solid var(--ds-border-input, #8c8f97);
+    border-radius: 4px;
+}
+
+.dtm-input::placeholder {
+    color: var(--ds-text-subtlest, #6b6e76);
+}
+
+.dtm-input:focus {
+    outline: none;
+    border-color: var(--ds-border-focused, #4688ec);
+    box-shadow: inset 0 0 0 1px var(--ds-border-focused, #4688ec);
+}
+
+.dtm-input-number {
+    width: 56px;
+    height: 24px;
+    font-size: 12px;
+    text-align: center;
+    appearance: textfield;
+}
+
+.dtm-input-number::-webkit-inner-spin-button,
+.dtm-input-number::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+}
+
+.dtm-history {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.dtm-history-item {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: start;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.dtm-history-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.dtm-history-note {
+    font-style: italic;
+    overflow-wrap: anywhere;
+}
+
+.dtm-lozenge {
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    color: var(--ds-text-subtle, #505258);
+    background: var(--ds-background-neutral, #0515240f);
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.dtm-options {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dtm-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    text-align: left;
+    color: inherit;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.dtm-option:hover {
+    background: var(--ds-background-neutral-subtle-hovered, #0515240f);
+}
+
+.dtm-message {
+    color: var(--ds-text-subtle, #505258);
+}
+
+.dtm-message-error {
+    color: var(--ds-text-danger, #ae2e24);
+}
+
+.dtm-spinner {
+    width: 20px;
+    height: 20px;
+    margin: 4px auto;
+    border: 2px solid var(--ds-border, #0b120e24);
+    border-top-color: var(--ds-text-subtle, #505258);
+    border-radius: 50%;
+    animation: dtm-spin 0.8s linear infinite;
+}
+
+@keyframes dtm-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* GitLab sidebar (host=gitlab): flat block like the other sidebar sections, no card */
+.dtm-host-gitlab .dtm-panel {
+    border: 0;
+    border-radius: 0;
+}
+
+.dtm-host-gitlab .dtm-header {
+    padding: 4px 0 8px;
+}
+
+.dtm-host-gitlab .dtm-header:hover {
+    background: transparent;
+}
+
+.dtm-host-gitlab .dtm-body {
+    padding: 0 0 8px;
+}

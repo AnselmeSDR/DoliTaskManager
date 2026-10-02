@@ -1,0 +1,24 @@
+# DoliTaskManager
+
+Chrome extension (MV3) to search Dolibarr tasks and log time, via the custom API `custom/vold/ticket_api.php` (`apiUrl` + `apiKey` in settings).
+
+## Stack
+
+React 19 + Vite 6 + Tailwind 3.4. `npm run build` → `dist/` (load unpacked). `src/config.js` is gitignored: copy `src/config.example.js` (`ATLASSIAN_HOSTNAME`, `GITLAB_HOSTNAME`, `API_HOST_PERMISSION`). `src/manifest.json` is a template: its `__KEY__` placeholders are filled from `src/config.js` at build (`dtm-manifest` plugin in `vite.config.js`), so no host is committed.
+
+## Structure
+
+- `src/popup.jsx` — entry of `index.html`: popup `App` (views `home` / `task` / `settings`, all settings in `chrome.storage.sync`, one state + `save*` per setting), or `Embed` when `?embed=task&ref=KEY`
+- `src/Embed.jsx` / `src/JiraTask.jsx` / `src/embed.css` — DoliTaskManager group embedded in the Jira issue right column: loads the exact ref with `get_task` (no status/project filter), falls back to `search_tasks` (closed included) if it fails, then shows the task + time logging styled like a native Jira group (`dtm-*` classes on Atlassian `--ds-*` tokens, forwarded by the content script via `dtm:ready` → `dtm:theme`); reports its height via `dtm:resize`
+- `src/utils/format.js` — duration/date/Gravatar helpers shared by `Task.jsx` and `JiraTask.jsx`
+- `src/content-common.js` — plain JS statically copied (not bundled), loaded before the host scripts in the same isolated world: global `dtm` (`syncPanel`, `watchPanel` theme/resize messaging, `watchSettings`, `poll`)
+- `src/content-jira.js` / `src/content-jira.css` — on `https://*.atlassian.net/*`, targeting Jira `data-testid`s (`testIds`): injects `index.html?embed=task&ref=KEY` iframe (`#dtm-panel`) right after the status block (`jiraPanel`); moves the created/updated footnote dates into badges (`#dtm-dates`) on their own line under the status row and hides the footnote (`jiraDates`, read from the DOM, no API call); reorders the right column with CSS `order` on `visibility-container` children (status, panel, Details, then SLA/Client…) when the panel is enabled (`html.dtm-reorder`); toggles `html.dtm-wide-issue-modal` when `wideIssueModalWidth` (% of the window, 0 = Jira default) is set, via `--dtm-issue-modal-width`
+- `src/content-gitlab.js` / `src/content-gitlab.css` — on the merge request pages of the GitLab host (`GITLAB_HOSTNAME` in `src/config.js`): ticket key from the source branch, else from the MR title; panel iframe (`host=gitlab`, flat look) at the top of `aside.right-sidebar` (`gitlabPanel`); `--ds-*` tokens computed from GitLab computed styles (probe elements + `color-mix`)
+- `src/hooks/api.js` — `useAPIData(endpoint, token)`: `searchTasks`, `getTask`, `getPinnedTasks`, `updateTaskTime`
+
+## Conventions
+
+- Jira is a React SPA: content script polls (URL + re-inserts the panel), targets `data-testid` / `role`, never generated classes
+- Extension pages loaded in Jira must be listed in `web_accessible_resources`
+- The Dolibarr API sends no CORS headers: `host_permissions` (`API_HOST_PERMISSION` in `src/config.js`) lets the extension bypass CORS; the embedded view fetches through `background.js` (`dtm:fetch`, accepted only from extension pages and for URLs under the configured `apiUrl`)
+- Issue key from URL: `?selectedIssue=KEY` (modal) or `/browse/KEY`

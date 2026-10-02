@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "DoliTaskManager",
+  "version": "1.0",
+  "description": "Extension to manage you dolibarr tasks and tickets with custom api",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "__API_HOST_PERMISSION__"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.atlassian.net/*"
+      ],
+      "js": [
+        "content-common.js",
+        "content-jira.js"
+      ],
+      "css": [
+        "content-jira.css"
+      ]
+    },
+    {
+      "matches": [
+        "https://__GITLAB_HOSTNAME__/*"
+      ],
+      "js": [
+        "content-common.js",
+        "content-gitlab.js"
+      ],
+      "css": [
+        "content-gitlab.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "index.html",
+        "popup.js",
+        "assets/*"
+      ],
+      "matches": [
+        "https://*.atlassian.net/*",
+        "https://__GITLAB_HOSTNAME__/*"
+      ]
+    }
+  ]
+}

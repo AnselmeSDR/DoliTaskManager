@@ -6,6 +6,7 @@ import './index.css';
 import Header from "./components/Header.jsx";
 import Settings from "./Settings.jsx";
 import Task from "./Task.jsx";
+import Embed from "./Embed.jsx";
 
 const App = () => {
     const [view, setView] = useState('home');
@@ -20,7 +21,6 @@ const App = () => {
     const [showOnlyMyTasks, setShowOnlyMyTasks] = useState(true);
     const [showClosedTasks, setShowClosedTasks] = useState(false);
     const [useEmojiIcons, setUseEmojiIcons] = useState(false);
-    const [initialLimitTasks, setInitialLimitTasks] = useState(5);
     const [limitTasks, setLimitTasks] = useState(10);
 
     // Task detail settings
@@ -28,46 +28,54 @@ const App = () => {
     const [showTimes, setShowTimes] = useState(true);
     const [limitTimes, setLimitTimes] = useState(1);
 
+    // Jira settings
+    const [jiraPanel, setJiraPanel] = useState(true);
+    const [jiraDates, setJiraDates] = useState(true);
+    const [wideIssueModalWidth, setWideIssueModalWidth] = useState(0); // 0 = Jira default width
+
+    // GitLab settings
+    const [gitlabPanel, setGitlabPanel] = useState(true);
+
+    // Settings loaded in a single read: Home must not fetch with default values (limitTasks…)
+    const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
     useEffect(() => {
-        chrome.storage.sync.get(['pinnedTaskRefs'], (val) => {
+        const keys = [
+            'pinnedTaskRefs', 'apiKey', 'apiUrl',
+            'showOnlyMyTasks', 'showClosedTasks', 'useEmojiIcons', 'limitTasks',
+            'defaultDuration', 'showTimes', 'limitTimes',
+            'jiraPanel', 'jiraDates', 'wideIssueModalWidth',
+            'gitlabPanel',
+        ];
+
+        chrome.storage.sync.get(keys, (val) => {
             if (val.pinnedTaskRefs !== undefined) setPinnedTaskRefs(val.pinnedTaskRefs);
-        })
 
-        // API settings
-        chrome.storage.sync.get(['apiKey'], (val) => {
+            // API settings
             if (val.apiKey) setApiKey(val.apiKey)
-        })
-        chrome.storage.sync.get(['apiUrl'], (val) => {
             if (val.apiUrl) setApiUrl(val.apiUrl);
-        })
 
-        // Task list settings
-        chrome.storage.sync.get(['showOnlyMyTasks'], (val) => {
+            // Task list settings
             if (val.showOnlyMyTasks !== undefined) setShowOnlyMyTasks(val.showOnlyMyTasks);
-        })
-        chrome.storage.sync.get(['showClosedTasks'], (val) => {
             if (val.showClosedTasks !== undefined) setShowClosedTasks(val.showClosedTasks);
-        })
-        chrome.storage.sync.get(['useEmojiIcons'], (val) => {
             if (val.useEmojiIcons !== undefined) setUseEmojiIcons(val.useEmojiIcons);
-        });
-        chrome.storage.sync.get(['initialLimitTasks'], (val) => {
-            if (val.initialLimitTasks !== undefined) setInitialLimitTasks(val.initialLimitTasks)
-        });
-        chrome.storage.sync.get(['limitTasks'], (val) => {
             if (val.limitTasks !== undefined) setLimitTasks(val.limitTasks);
-        });
 
-        // Task detail settings
-        chrome.storage.sync.get(['defaultDuration'], (val) => {
+            // Task detail settings
             if (val.defaultDuration !== undefined) setDefaultDuration(val.defaultDuration);
-        })
-        chrome.storage.sync.get(['showTimes'], (val) => {
             if (val.showTimes !== undefined) setShowTimes(val.showTimes);
-        });
-        chrome.storage.sync.get(['limitTimes'], (val) => {
             if (val.limitTimes !== undefined) setLimitTimes(val.limitTimes);
-        });
+
+            // Jira settings
+            if (val.jiraPanel !== undefined) setJiraPanel(val.jiraPanel);
+            if (val.jiraDates !== undefined) setJiraDates(val.jiraDates);
+            if (val.wideIssueModalWidth !== undefined) setWideIssueModalWidth(val.wideIssueModalWidth);
+
+            // GitLab settings
+            if (val.gitlabPanel !== undefined) setGitlabPanel(val.gitlabPanel);
+
+            setIsSettingsLoaded(true);
+        })
     }, [])
 
     const savePinnedTaskRef = (currentPinnedTaskRef, val) => {
@@ -108,10 +116,6 @@ const App = () => {
         chrome.storage.sync.set({useEmojiIcons: val}, () => setUseEmojiIcons(val));
     };
 
-    const saveInitialLimitTasks = (val) => {
-        chrome.storage.sync.set({initialLimitTasks: val}, () => setInitialLimitTasks(val));
-    };
-
     const saveLimitTasks = (val) => {
         chrome.storage.sync.set({limitTasks: val}, () => setLimitTasks(val));
     };
@@ -131,12 +135,32 @@ const App = () => {
     };
 
 
+    // Jira settings
+    const saveJiraPanel = (val) => {
+        chrome.storage.sync.set({jiraPanel: val}, () => setJiraPanel(val));
+    };
+
+    const saveJiraDates = (val) => {
+        chrome.storage.sync.set({jiraDates: val}, () => setJiraDates(val));
+    };
+
+    const saveWideIssueModalWidth = (val) => {
+        chrome.storage.sync.set({wideIssueModalWidth: val}, () => setWideIssueModalWidth(val));
+    };
+
+
+    // GitLab settings
+    const saveGitlabPanel = (val) => {
+        chrome.storage.sync.set({gitlabPanel: val}, () => setGitlabPanel(val));
+    };
+
+
     return (
         <>
             <Header view={view} setView={setView} setSelectedTask={setSelectedTask} />
             <div className={'w-full h-full'}>
 
-                {view === 'home'
+                {view === 'home' && isSettingsLoaded
                     ? <Home apiKey={apiKey} apiUrl={apiUrl}
                             showOnlyMyTasks={showOnlyMyTasks}
                             showClosedTasks={showClosedTasks}
@@ -145,7 +169,6 @@ const App = () => {
                             pinnedTaskRefs={pinnedTaskRefs}
                             savePinnedTaskRef={savePinnedTaskRef}
                             useEmojiIcons={useEmojiIcons}
-                            initialLimitTasks={initialLimitTasks}
                             limitTasks={limitTasks} />
                     : null
                 }
@@ -157,10 +180,13 @@ const App = () => {
                                 defaultDuration={defaultDuration} setDefaultDuration={saveDefaultDuration}
                                 showClosedTasks={showClosedTasks} setShowClosedTasks={saveShowClosedTasks}
                                 useEmojiIcons={useEmojiIcons} setUseEmojiIcons={saveUseEmojiIcons}
-                                initialLimitTasks={initialLimitTasks} setInitialLimitTasks={saveInitialLimitTasks}
                                 limitTasks={limitTasks} setLimitTasks={saveLimitTasks}
                                 limitTimes={limitTimes} setLimitTimes={saveLimitTimes}
-                                showTimes={showTimes} setShowTimes={saveShowTimes} />
+                                showTimes={showTimes} setShowTimes={saveShowTimes}
+                                jiraPanel={jiraPanel} setJiraPanel={saveJiraPanel}
+                                jiraDates={jiraDates} setJiraDates={saveJiraDates}
+                                wideIssueModalWidth={wideIssueModalWidth} setWideIssueModalWidth={saveWideIssueModalWidth}
+                                gitlabPanel={gitlabPanel} setGitlabPanel={saveGitlabPanel} />
                     : null
                 }
 
@@ -179,4 +205,15 @@ const App = () => {
     )
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />)
+const urlParams = new URLSearchParams(window.location.search);
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+if (urlParams.get('embed') === 'task' && urlParams.get('ref')) {
+    document.documentElement.classList.add('embed');
+    // Host page: look (see src/embed.css) and task link target
+    const host = ['jira', 'gitlab'].includes(urlParams.get('host')) ? urlParams.get('host') : 'jira';
+    document.documentElement.classList.add(`dtm-host-${host}`);
+    root.render(<Embed taskRef={urlParams.get('ref')} host={host} />);
+} else {
+    root.render(<App />);
+}

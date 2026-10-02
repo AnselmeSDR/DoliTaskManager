@@ -15,7 +15,6 @@ const Home = ({
                   pinnedTaskRefs,
                   savePinnedTaskRef,
                   useEmojiIcons,
-                  initialLimitTasks,
                   limitTasks,
               }) => {
     const {searchTasks, getTask} = useAPIData(apiUrl, apiKey);
@@ -35,7 +34,7 @@ const Home = ({
 
     const [searchBarHeight, setSearchBarHeight] = useState(0);
     const [pinnedHeaderHeight, setPinnedHeaderHeight] = useState(0);
-    const didInitialFetch = useRef(false); // Limit initial fetch to initialFetchTaskLimit tasks and load pinned tasks once on mount
+    const didFetchPinned = useRef(false); // Pinned tasks are loaded once on mount
 
     // Measure sticky blocks heights on mount and window resize
     useEffect(() => {
@@ -66,8 +65,6 @@ const Home = ({
     }, [apiUrl, apiKey, searchTerm, showOnlyMyTasks, showClosedTasks, pinnedTaskRefs, limitTasks]);
 
     const fetchTasks = async () => {
-        const isInitial = !didInitialFetch.current;
-
         setIsLoading(true);
 
         let currentSearchTerm = searchTerm;
@@ -82,9 +79,16 @@ const Home = ({
             }
         }
 
+        // Nothing to search (no input, no Jira key in the tab): don't fetch the whole task list
+        if (currentSearchTerm === '') {
+            setTasks([]);
+            setIsLoading(false);
+            return;
+        }
+
         const params = {
             search_term: currentSearchTerm,
-            limit_tasks: isInitial ? initialLimitTasks : limitTasks,
+            limit_tasks: limitTasks,
         };
         if (showOnlyMyTasks === false) {
             params.view_all_tasks = true;
@@ -104,14 +108,12 @@ const Home = ({
             console.error("Erreur lors de la récupération des tâches:", error);
         } finally {
             setIsLoading(false);
-            if (isInitial) {
-                didInitialFetch.current = true; // ensure we don't treat future calls as initial
-            }
         }
     };
 
     const fetchPinnedTasks = async () => {
-        if (didInitialFetch.current) return; // Only on initial mount
+        if (didFetchPinned.current) return;
+        didFetchPinned.current = true;
 
         setIsLoadingPinned(true);
         try {
@@ -208,7 +210,14 @@ const Home = ({
     }
 
     function setTaskPinned(currentTask) {
-        savePinnedTaskRef(currentTask.ref, !currentTask.is_pinned);
+        const isPinned = !currentTask.is_pinned;
+        savePinnedTaskRef(currentTask.ref, isPinned);
+
+        // Pinned tasks are fetched once on mount: update the section locally
+        setPinnedTasks((current) => {
+            const others = current.filter(task => task.ref !== currentTask.ref);
+            return isPinned ? [...others, {...currentTask, is_pinned: true}] : others;
+        });
     }
 
     return (
@@ -281,7 +290,11 @@ const Home = ({
                 {/* Liste des tasks */}
                 <div className="flex flex-col gap-2 w-full pb-2 px-2">
                     {isLoading && <Loader className="mx-auto text-center" />}
-                    {!isLoading && tasks.length === 0 && <p className="text-gray-400 text-sm">Aucun résultat :(</p>}
+                    {!isLoading && tasks.length === 0 && (
+                        <p className="text-gray-400 text-sm">
+                            {inputValue ? 'Aucun résultat :(' : 'Saisissez une recherche pour afficher les tâches.'}
+                        </p>
+                    )}
                     {!isLoading && tasks.map((task) => (
                         <TaskItem key={task.ref}
                                   className="bg-white border border-gray-200 rounded-lg shadow px-3 py-2"
